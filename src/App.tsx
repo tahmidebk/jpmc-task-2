@@ -8,6 +8,7 @@ import './App.css';
  */
 interface IState {
   data: ServerRespond[],
+  showGraph: boolean // add a new state variable to keep track of whether to display the graph
 }
 
 /**
@@ -22,6 +23,7 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      showGraph: false // initialize showGraph to false
     };
   }
 
@@ -36,11 +38,21 @@ class App extends Component<{}, IState> {
    * Get new data from server and update the state with the new data
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    let count = 0;
+    const interval = setInterval(() => {
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        // Update the state by creating a new array of data that consists of
+        // Previous data in the state and the new data from server
+        this.setState({
+          data: [...this.state.data, ...serverResponds],
+          showGraph: true // update showGraph to true after we have received data from the server
+        });
+      });
+      count++;
+      if (count > 1000) {
+        clearInterval(interval); // stop requesting data after 1000 requests
+      }
+    }, 100);
   }
 
   /**
@@ -62,9 +74,11 @@ class App extends Component<{}, IState> {
             onClick={() => {this.getDataFromServer()}}>
             Start Streaming Data
           </button>
-          <div className="Graph">
-            {this.renderGraph()}
-          </div>
+          {this.state.showGraph ? ( // only render the graph if showGraph is true
+            <div className="Graph">
+              {this.renderGraph()}
+            </div>
+          ) : null}
         </div>
       </div>
     )
